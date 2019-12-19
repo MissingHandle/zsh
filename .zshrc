@@ -13,4 +13,6 @@
 # .zlogin   |      √      |         x         |    x    |        √
 # .zlogout  |      √      |         x         |    x    |        √
 
+alias lsl="ls -la"
+
 source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
