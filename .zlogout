@@ -1,0 +1,1 @@
+/Users/gabe/.zsh/.zprezto/runcoms/zlogout
