@@ -14,6 +14,11 @@
 # .zlogout  |      √      |         x         |    x    |        √
 
 
+#
+# Local Secrets
+#
+ source "${ZDOTDIR}/../.secretsrc"
+
 
 #
 # Shell Configuration
@@ -30,10 +35,16 @@
     . ~/.zsh/.zshrc
   }
 
+  # issue with HEAD^ in git
+  # https://github.com/ohmyzsh/ohmyzsh/issues/449
+  unsetopt nomatch
+
 
 #
-# Shell Commands
+# Shell
 #
+
+  cdpath=(~ ~/Code)
 
   alias lsl="ls -la"
 
@@ -59,10 +70,14 @@
   alias force='git push --force-with-lease'
   alias pull='git checkout master; git pull; git checkout -'
   alias rebase='git rebase'
-  alias rebase_on_self='git rebase -i `git common-ancestor`'
+  # alias rebase_on_self='git rebase -i `git common-ancestor`'
   alias rmaster='git rebase -i origin/master'
   alias merge='git merge'
   alias soft_reset='git reset --soft HEAD^'
+
+  rebase_self() {
+    git rebase --interactive $(git merge-base master HEAD)
+  }
 
   ignore_changes() {
     git update-index --assume-unchanged $1
@@ -106,20 +121,34 @@
 # AWS
 #
 
-  export AWS_PROFILE_ASSUME_ROLE="iam"
-  source $(which assume-role)
-  alias awswhoami="aws sts get-caller-identity"
+  function set_aws_profile() {
+    : "${1?'Usage: set_aws_profile (staging|production)'}"
 
-  aa_staging() {
-    assume-role staging engineering $1
-    $(aws ecr get-login --no-include-email)
+    if [[ "$1" == "staging" ]] then
+      export AWS_PROFILE=clearcover-staging-engineering
+      echo "AWS Profile set to staging"
+      return
+    fi
+    if [[ "$1" == "production" ]] then
+      export AWS_PROFILE=clearcover-production-engineering
+      echo "AWS Profile set to production"
+      return
+    fi
+    echo "unknown clearcover account $1. Acceptable values: staging, production"
   }
 
-  aa_prod() {
-    assume-role production engineering $1
-    $(aws ecr get-login --no-include-email)
+  function aws_login() {
+    echo "Using gimme-aws-creds to log into AWS for all roles.."
+    gimme-aws-creds
+    echo "Setting AWS Profile to Staging since this is most common. use 'set_aws_profile' cmd to change"
+    set_aws_profile staging
   }
 
+  function awswhoami() {
+    echo "Logged into aws as:"
+    aws sts get-caller-identity
+    echo "Current Profile: $AWS_PROFILE"
+  }
 
 
 #
@@ -152,7 +181,7 @@
 #
 # Local Postgres Config
 #
-  export DB_PORT=5442
+  # export DB_PORT=5442
 
 #
 # Ruby
@@ -178,9 +207,14 @@
 
 
 #
-# Ruby
+# Typescript / Node
 #
 
+  #
+  # fnm = fast node manager
+  # https://github.com/Schniz/fnm
+  #
+  eval "`fnm env --multi --use-on-cd`"
 
 
 #
@@ -191,10 +225,36 @@
   alias encrypt_env="jet encrypt codeship.env.decrypted codeship.env.encrypted"
   alias fury_push_all="rake build && fury push --api-token=fcJWjG-v9vecAtepC9dR pkg/*"
 
+ port_forward_policy_api() {
+  kubectl port-forward deployments/policy-api 1339:1338 -n staging
+ }
+
+#
+# Harmony
+#
+
+  # Policy API Types
+  import_types_to_package() {
+    echo "deleting generated types directory: cc-typescript/packages/policy-object-model/types/generated"
+    rm -rf ~/Code/cc-typescript/packages/policy-object-model/types/generated
+    mkdir ~/Code/cc-typescript/packages/policy-object-model/types/generated
+
+    # echo "importing types from policy-api-spec/generated-clients/payments/model"
+    # cp -R ~/Code/policy-api-spec/generated-clients/payments/model/ ~/Code/cc-typescript/packages/policy-object-model/types/generated
+
+    echo "importing types from policy-api-spec/generated-clients/typescript-node/model"
+    cp -R ~/Code/policy-api-spec/generated-clients/typescript-node/model/ ~/Code/cc-typescript/packages/policy-object-model/types/generated
+
+    rm -f ~/Code/cc-typescript/packages/policy-object-model/types/generated/models.ts
+    echo "imported to ~/Code/cc-typescript/packages/policy-object-model/types/generated"
+  }
+
 
 #
 # Reznor
 #
+  # https://stackoverflow.com/questions/52671926/rails-may-have-been-in-progress-in-another-thread-when-fork-was-called
+  export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 
   alias cdrez='cd ~/code/reznor'
   alias fix_coverage='gc --theirs coverage/.last_run.json'
