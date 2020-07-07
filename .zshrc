@@ -127,11 +127,15 @@
     if [[ "$1" == "staging" ]] then
       export AWS_PROFILE=clearcover-staging-engineering
       echo "AWS Profile set to staging"
+      kcsetcontext cc-internal
+      echo "K8s Cluster set to staging"
       return
     fi
     if [[ "$1" == "production" ]] then
       export AWS_PROFILE=clearcover-production-engineering
       echo "AWS Profile set to production"
+      kcsetcontext production
+      echo "K8s Cluster set to production"
       return
     fi
     echo "unknown clearcover account $1. Acceptable values: staging, production"
@@ -142,6 +146,9 @@
     gimme-aws-creds
     echo "Setting AWS Profile to Staging since this is most common. use 'set_aws_profile' cmd to change"
     set_aws_profile staging
+    echo "Setting Kubernetes Cluster to Staging"
+
+    awswhoami
   }
 
   function awswhoami() {
